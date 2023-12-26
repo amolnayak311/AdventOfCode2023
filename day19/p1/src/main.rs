@@ -95,58 +95,58 @@ fn main() {
         .unwrap()
         .lines()
         .fold((false, HashMap::new(), vec![]),
-        |(parse_part, mut workflows, mut parts), line| {
+              |(parse_part, mut workflows, mut parts), line| {
 
-            if line.is_empty() {
-                (true, workflows, parts)
-            } else if parse_part {
-                // example,  {x=787,m=2655,a=1222,s=2876}
-                let part = line[1..line.len() - 1]
-                    .split(",")
-                    .fold((0, 0, 0, 0), |(x, m, a, s), value| {
-                        match value.chars().next().unwrap() {
-                            'x' => (value[2..].parse::<u32>().unwrap(), m, a, s),
-                            'm' => (x, value[2..].parse::<u32>().unwrap(), a, s),
-                            'a' => (x, m, value[2..].parse::<u32>().unwrap(), s),
-                            's' => (x, m, a, value[2..].parse::<u32>().unwrap()),
-                            _  => panic!("Unexpected attribute in part")
-                        }
-                    });
-                parts.push(Part{x: part.0, m: part.1, a: part.2, s: part.3});
-                (parse_part, workflows, parts)
-            } else {
-                // Example px{a<2006:qkq,m>2090:A,rfg}
-                let workflow_name = &line[0..line.find("{").unwrap()];
-                let conditions = &line[workflow_name.len() + 1..line.len() - 1];
-                // Condition will look like  a<2006:qkq,m>2090:A,rfg, now split by ,
-                let (steps, default_workflow) = conditions
-                    .split(",")
-                    .fold((vec![], String::new()),
-                      |(mut workflow_steps, default_workflow), condition_string| {
-                          if condition_string.contains(":") {
-                              let colon_idx = condition_string.find(":").unwrap();
-                              let workflow_if_successful = String::from(&condition_string[colon_idx + 1..]);
-                              let condition = &condition_string[0..colon_idx];
-                              let mut iter = condition.chars();
-                              let attribute = iter.next().unwrap();
-                              let is_less_than = iter.next().unwrap() == '<';
-                              let threshold = condition[2..].parse::<u32>().unwrap();
-                              let condition = Condition{ attribute, is_less_than, threshold};
-                              workflow_steps.push(WorkflowStep{condition, workflow_if_successful});
-                              (workflow_steps, default_workflow)
-                          } else {
-                              (workflow_steps, String::from(condition_string))
-                          }
-                      });
-                workflows.insert(String::from(workflow_name), Workflow{steps, default_workflow});
-                (parse_part, workflows, parts)
+                  if line.is_empty() {
+                      (true, workflows, parts)
+                  } else if parse_part {
+                      // example,  {x=787,m=2655,a=1222,s=2876}
+                      let part = line[1..line.len() - 1]
+                          .split(",")
+                          .fold((0, 0, 0, 0), |(x, m, a, s), value| {
+                              match value.chars().next().unwrap() {
+                                  'x' => (value[2..].parse::<u32>().unwrap(), m, a, s),
+                                  'm' => (x, value[2..].parse::<u32>().unwrap(), a, s),
+                                  'a' => (x, m, value[2..].parse::<u32>().unwrap(), s),
+                                  's' => (x, m, a, value[2..].parse::<u32>().unwrap()),
+                                  _  => panic!("Unexpected attribute in part")
+                              }
+                          });
+                      parts.push(Part{x: part.0, m: part.1, a: part.2, s: part.3});
+                      (parse_part, workflows, parts)
+                  } else {
+                      // Example px{a<2006:qkq,m>2090:A,rfg}
+                      let workflow_name = &line[0..line.find("{").unwrap()];
+                      let conditions = &line[workflow_name.len() + 1..line.len() - 1];
+                      // Condition will look like  a<2006:qkq,m>2090:A,rfg, now split by ,
+                      let (steps, default_workflow) = conditions
+                          .split(",")
+                          .fold((vec![], String::new()),
+                                |(mut workflow_steps, default_workflow), condition_string| {
+                                    if condition_string.contains(":") {
+                                        let colon_idx = condition_string.find(":").unwrap();
+                                        let workflow_if_successful = String::from(&condition_string[colon_idx + 1..]);
+                                        let condition = &condition_string[0..colon_idx];
+                                        let mut iter = condition.chars();
+                                        let attribute = iter.next().unwrap();
+                                        let is_less_than = iter.next().unwrap() == '<';
+                                        let threshold = condition[2..].parse::<u32>().unwrap();
+                                        let condition = Condition{ attribute, is_less_than, threshold};
+                                        workflow_steps.push(WorkflowStep{condition, workflow_if_successful});
+                                        (workflow_steps, default_workflow)
+                                    } else {
+                                        (workflow_steps, String::from(condition_string))
+                                    }
+                                });
+                      workflows.insert(String::from(workflow_name), Workflow{steps, default_workflow});
+                      (parse_part, workflows, parts)
 
-            }
-        });
+                  }
+              });
 
     let accepted_parts_sum =
         parts.into_iter().filter(|part| eval_workflows_rec(part, "in", &workflows) == "A")
-        .fold(0, |acc, part| acc + part.sum());
+            .fold(0, |acc, part| acc + part.sum());
     println!("{}", accepted_parts_sum);
 
 }
